@@ -33,7 +33,13 @@ class Task(Base):
     completed: bool = Column(Boolean, default=False, nullable=False)
     
     # The date and time when the task is due. Optional.
-    due_date: Optional[datetime] = Column(DateTime, nullable=True)
+    # Decision: The `timezone=True` flag is critical for correct timezone handling.
+    # Justification: It ensures all datetimes are stored with timezone information
+    # (or normalized to UTC, depending on the database backend). This prevents
+    # ambiguity and incorrect conversions when users in different timezones
+    # interact with the application. For SQLite, this stores the timezone offset
+    # in the ISO format string.
+    due_date: Optional[datetime] = Column(DateTime(timezone=True), nullable=True)
     
     # The priority of the task (e.g., 'High', 'Medium', 'Low'). Optional.
     priority: Optional[str] = Column(String(50), nullable=True)

@@ -19,7 +19,6 @@ from app.schemas.task import TaskCreate
 
 logger = logging.getLogger(__name__)
 
-
 class LLMService:
     """
     A service class for handling all LLM-based natural language processing.
@@ -76,9 +75,8 @@ class LLMService:
         """
         Parses the text using the configured LLM (Anthropic Claude).
         
-        This method constructs a detailed prompt with instructions and examples
-        (few-shot prompting) to guide the LLM to return a structured JSON object.
-        It then parses the LLM's response to create a task.
+        This method constructs a detailed prompt with instructions, examples,
+        and a safety guardrail to guide the LLM's response.
         
         Args:
             text: The user's natural language input.
@@ -87,20 +85,21 @@ class LLMService:
             A TaskCreate schema object from the LLM's output.
             
         Raises:
-            Exception: If the LLM call or JSON parsing fails.
+            Exception: If the LLM call or JSON parsing fails for unexpected reasons.
         """
         try:
             logger.debug(f"Attempting to parse with LLM: '{text}'")
             
-            # This prompt is engineered to be robust. It clearly states the desired
-            # output format (JSON), provides the schema, gives examples, and includes
-            # the current time to help the model resolve relative dates like "tomorrow".
-            prompt = f"""Parse the following natural language task description into structured data.
-Extract the task title, description (if any), due date/time (if mentioned), and priority (if mentioned).
+            # This prompt is engineered with a specific safety instruction.
+            # If the input is inappropriate, the LLM is instructed to return a
+            # pre-defined, sanitized JSON object instead of the user's harmful text.
+            sanitized_title = "Inappropriate Content"
+            sanitized_description = "Original request was flagged as inappropriate and has been sanitized."
+            
+            prompt = f"""You are a helpful assistant that converts natural language text into a structured task in JSON format.
 
-Text: "{text}"
-
-Return ONLY a JSON object with this structure:
+--- TASK STRUCTURE ---
+You must always return a single, valid JSON object with this structure:
 {{
     "title": "concise task title",
     "description": "additional details if any (optional)",
@@ -108,12 +107,27 @@ Return ONLY a JSON object with this structure:
     "priority": "high/medium/low if mentioned (optional)"
 }}
 
+--- SAFETY GUARDRAIL ---
+If the user's text is abusive, illegal, inappropriate, promotes self-harm, or is otherwise unethical, you MUST NOT use the user's text. Instead, you MUST respond with EXACTLY this JSON object:
+{{
+    "title": "{sanitized_title}",
+    "description": "{sanitized_description}",
+    "due_date": "{(datetime.now() + timedelta(hours=1)).isoformat()}"
+}}
+
+--- EXAMPLES ---
+User text: "remind me to submit taxes next Monday at noon"
+Your response: {{"title": "Submit taxes", "due_date": "2024-XX-XXT12:00:00"}}
+
+User text: "an abusive or inappropriate request"
+Your response: {{"title": "{sanitized_title}", "description": "{sanitized_description}", "due_date": "{(datetime.now() + timedelta(hours=1)).isoformat()}"}}
+
+--- CURRENT CONTEXT ---
 Current date/time for reference: {datetime.now().isoformat()}
 
-Examples:
-- "remind me to submit taxes next Monday at noon" -> {{"title": "Submit taxes", "due_date": "2024-XX-XXT12:00:00"}}
-- "buy groceries tomorrow high priority" -> {{"title": "Buy groceries", "due_date": "2024-XX-XX", "priority": "high"}}
-- "call mom" -> {{"title": "Call mom"}}"""
+--- USER REQUEST ---
+User text: "{text}"
+Your response:"""
             
             response = self.client.messages.create(
                 model=settings.model,
@@ -160,7 +174,15 @@ Examples:
         This parser uses regular expressions to extract priority, dates, and times
         from the text. It provides a baseline level of "smart" parsing and ensures
         the feature remains functional without an LLM.
+
+        Justification: Guarantees core functionality ("Natural-language -> Task")
+        is always available, even without an API key or during an API outage. This
+        improves resilience and the developer experience.
         
+        Trade-off: This parser is rigid. It can only handle patterns it's been
+        explicitly programmed to recognize and is less "intelligent" than the LLM.
+        Adding more complex patterns increases its maintenance overhead.
+
         Args:
             text: The user's natural language input.
             

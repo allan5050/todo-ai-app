@@ -28,7 +28,7 @@ class Settings(BaseSettings):
 
     # The specific model to be used for the LLM-powered features.
     # Defaults to a cost-effective and fast model.
-    model: str = os.getenv("MODEL", "claude-3-haiku-20240307")
+    model: str = os.getenv("MODEL", "claude-sonnet-4-20250514")
     
     # --- Database Configuration ---
     # The connection string for the database.

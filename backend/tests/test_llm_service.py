@@ -1,4 +1,18 @@
-"""Tests for the LLMService."""
+"""
+Tests for the LLMService.
+
+To run these tests, navigate to the `backend` directory, activate your virtual
+environment, and then run `pytest`.
+
+Example using PowerShell:
+```powershell
+cd backend
+.\\venv\\Scripts\\Activate.ps1
+pytest tests/test_llm_service.py
+```
+
+Make sure you have the required packages installed from `requirements.txt`.
+"""
 import pytest
 from unittest.mock import Mock, patch, MagicMock
 from datetime import datetime, timedelta
@@ -8,7 +22,8 @@ from app.schemas.task import TaskCreate
 
 # A dictionary to simulate LLM responses for consistency in tests.
 MOCK_LLM_RESPONSES = {
-    "taxes": '{"title": "Submit taxes", "due_date": "2024-01-15T12:00:00", "priority": "high"}'
+    "taxes": '{"title": "Submit taxes", "due_date": "2024-01-15T12:00:00", "priority": "high"}',
+    "inappropriate": '{"title": "Inappropriate Content", "description": "Original request was flagged as inappropriate and has been sanitized."}'
 }
 
 class TestLLMService:
@@ -94,6 +109,25 @@ class TestLLMService:
         assert result.title == "Submit taxes"
         assert result.priority == "high"
         assert result.due_date is not None
+        llm_service_with_client.client.messages.create.assert_called_once()
+
+    def test_parse_with_llm_sanitizes_inappropriate_request(self, llm_service_with_client: LLMService):
+        """
+        Tests that the LLM parser correctly returns a sanitized, default task
+        when the model identifies the input as inappropriate.
+        """
+        # Arrange
+        mock_response = MagicMock()
+        mock_response.content = [MagicMock(text=MOCK_LLM_RESPONSES["inappropriate"])]
+        llm_service_with_client.client.messages.create.return_value = mock_response
+
+        # Act
+        result = llm_service_with_client._parse_with_llm("An obviously inappropriate user prompt.")
+
+        # Assert
+        assert isinstance(result, TaskCreate)
+        assert result.title == "Inappropriate Content"
+        assert result.description == "Original request was flagged as inappropriate and has been sanitized."
         llm_service_with_client.client.messages.create.assert_called_once()
 
     def test_main_parse_function_falls_back_on_llm_error(self, llm_service_with_client: LLMService):

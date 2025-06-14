@@ -1,4 +1,18 @@
-"""Tests for the TaskService."""
+"""
+Tests for the TaskService.
+
+To run these tests, navigate to the `backend` directory, activate your virtual
+environment, and then run `pytest`.
+
+Example using PowerShell:
+```powershell
+cd backend
+.\\venv\\Scripts\\Activate.ps1
+pytest tests/test_task_service.py
+```
+
+Make sure you have the required packages installed from `requirements.txt`.
+"""
 import pytest
 from unittest.mock import Mock
 from datetime import datetime

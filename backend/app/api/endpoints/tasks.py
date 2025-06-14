@@ -74,6 +74,7 @@ async def create_task_from_natural_language(
         logger.info(f"Received request to parse natural language: '{request.text}'")
         
         # 1. Parse the natural language input into a structured TaskCreate schema.
+        #    The LLM service will sanitize inappropriate content internally.
         task_data = llm_service.parse_natural_language(request.text)
         
         # 2. Use the standard task creation service to save the new task.
