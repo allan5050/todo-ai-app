@@ -7,6 +7,7 @@ from fastapi.responses import JSONResponse
 from app.config import settings, logger
 from app.database import init_db
 from app.api.endpoints import tasks
+from app.api.endpoints import health
 
 # Initialize FastAPI app
 app = FastAPI(
@@ -68,7 +69,8 @@ async def global_exception_handler(request, exc):
 
 
 # Include routers
-app.include_router(tasks.router, prefix="/api/v1")
+app.include_router(tasks.router, prefix="/api/v1", tags=["Tasks"])
+app.include_router(health.router, prefix="/api/v1", tags=["Health"])
 
 if __name__ == "__main__":
     import uvicorn

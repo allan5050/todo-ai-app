@@ -2,13 +2,13 @@
  * Main App component
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import './App.css';
 import TaskList from './components/TaskList';
 import AddTaskForm from './components/AddTaskForm';
 import NaturalLanguageInput from './components/NaturalLanguageInput';
 import api from './services/api';
-import { Task, TaskCreate, TaskUpdate } from './types/task';
+import { Task, TaskCreate } from './types/task';
 
 function App() {
   const [tasks, setTasks] = useState<Task[]>([]);

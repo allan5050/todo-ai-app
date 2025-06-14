@@ -132,16 +132,16 @@ Examples:
         
         # Extract time expressions
         time_patterns = [
-            (r'\b(today)\b', lambda: datetime.now().replace(hour=23, minute=59, second=59)),
-            (r'\b(tomorrow)\b', lambda: datetime.now() + timedelta(days=1)),
-            (r'\b(next monday)\b', lambda: self._next_weekday(0)),
-            (r'\b(next tuesday)\b', lambda: self._next_weekday(1)),
-            (r'\b(next wednesday)\b', lambda: self._next_weekday(2)),
-            (r'\b(next thursday)\b', lambda: self._next_weekday(3)),
-            (r'\b(next friday)\b', lambda: self._next_weekday(4)),
-            (r'\b(next saturday)\b', lambda: self._next_weekday(5)),
-            (r'\b(next sunday)\b', lambda: self._next_weekday(6)),
-            (r'\b(next week)\b', lambda: datetime.now() + timedelta(weeks=1)),
+            (r'\b(today)\b', lambda m: datetime.now().replace(hour=23, minute=59, second=59)),
+            (r'\b(tomorrow)\b', lambda m: datetime.now() + timedelta(days=1)),
+            (r'\b(next monday)\b', lambda m: self._next_weekday(0)),
+            (r'\b(next tuesday)\b', lambda m: self._next_weekday(1)),
+            (r'\b(next wednesday)\b', lambda m: self._next_weekday(2)),
+            (r'\b(next thursday)\b', lambda m: self._next_weekday(3)),
+            (r'\b(next friday)\b', lambda m: self._next_weekday(4)),
+            (r'\b(next saturday)\b', lambda m: self._next_weekday(5)),
+            (r'\b(next sunday)\b', lambda m: self._next_weekday(6)),
+            (r'\b(next week)\b', lambda m: datetime.now() + timedelta(weeks=1)),
             (r'\bin (\d+) days?\b', lambda m: datetime.now() + timedelta(days=int(m.group(1)))),
             (r'\bin (\d+) hours?\b', lambda m: datetime.now() + timedelta(hours=int(m.group(1)))),
         ]
@@ -150,9 +150,8 @@ Examples:
             match = re.search(pattern, text, re.IGNORECASE)
             if match:
                 try:
-                    if callable(date_func):
-                        result["due_date"] = date_func(match) if match.groups() else date_func()
-                    text = text[:match.start()] + text[match.end():]
+                    result["due_date"] = date_func(match)
+                    text = text[:match.start()] + text[match.end():].strip()
                     break
                 except Exception as e:
                     logger.warning(f"Failed to parse date pattern: {e}")
