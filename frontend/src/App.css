@@ -1,0 +1,70 @@
+/**
+ * App styles with Tailwind CSS directives
+ */
+
+ @tailwind base;
+ @tailwind components;
+ @tailwind utilities;
+ 
+ /* Custom animations */
+ @keyframes fadeIn {
+   from {
+     opacity: 0;
+     transform: translateY(10px);
+   }
+   to {
+     opacity: 1;
+     transform: translateY(0);
+   }
+ }
+ 
+ .animate-fade-in {
+   animation: fadeIn 0.3s ease-out;
+ }
+ 
+ /* Custom scrollbar */
+ ::-webkit-scrollbar {
+   width: 8px;
+   height: 8px;
+ }
+ 
+ ::-webkit-scrollbar-track {
+   background: #f1f1f1;
+   border-radius: 4px;
+ }
+ 
+ ::-webkit-scrollbar-thumb {
+   background: #888;
+   border-radius: 4px;
+ }
+ 
+ ::-webkit-scrollbar-thumb:hover {
+   background: #555;
+ }
+ 
+ /* Loading spinner animation */
+ .animate-spin {
+   animation: spin 1s linear infinite;
+ }
+ 
+ @keyframes spin {
+   from {
+     transform: rotate(0deg);
+   }
+   to {
+     transform: rotate(360deg);
+   }
+ }
+ 
+ /* Focus styles for accessibility */
+ *:focus-visible {
+   outline: 2px solid #3b82f6;
+   outline-offset: 2px;
+ }
+ 
+ /* Smooth transitions */
+ * {
+   transition-property: background-color, border-color, color, fill, stroke;
+   transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+   transition-duration: 150ms;
+ }
