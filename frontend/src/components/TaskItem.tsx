@@ -32,6 +32,9 @@ const TaskItem: React.FC<TaskItemProps> = ({ task, onToggle, onDelete, onEdit })
   const formatDate = (dateString?: string) => {
     if (!dateString) return null;
     try {
+      // Create a new Date object directly from the ISO string.
+      // The backend now consistently provides timezone-aware strings (e.g., ending in 'Z' or with a +-offset),
+      // which new Date() parses correctly into the user's local timezone.
       return new Date(dateString).toLocaleString();
     } catch (error) {
       console.error("Error formatting date:", error);

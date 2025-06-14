@@ -55,11 +55,13 @@ class TaskResponse(TaskBase):
 class NaturalLanguageRequest(BaseModel):
     """Schema for the request to the natural language task parsing endpoint."""
     text: str = Field(..., min_length=1, description="The natural language text to be parsed into a task.")
+    timezone: Optional[int] = Field(None, description="The user's timezone offset in minutes from UTC (e.g., -180 for UTC+3)")
     
     class Config:
         """Adds an example to the OpenAPI documentation for this schema."""
         json_schema_extra = {
             "example": {
-                "text": "Remind me to submit taxes next Monday at noon"
+                "text": "Remind me to submit taxes next Monday at noon",
+                "timezone": -180
             }
         }

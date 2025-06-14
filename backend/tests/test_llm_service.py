@@ -143,7 +143,7 @@ class TestLLMService:
             result = llm_service_with_client.parse_natural_language("some text that will fail")
 
         # Assert: Check that the fallback was called and returned a result.
-        mock_fallback.assert_called_once_with("some text that will fail")
+        mock_fallback.assert_called_once_with("some text that will fail", None)
         assert result.title == "some text that will fail" # As per basic fallback logic
 
     def test_main_parse_function_uses_fallback_when_no_client(self, llm_service_no_client: LLMService):
@@ -156,5 +156,5 @@ class TestLLMService:
             result = llm_service_no_client.parse_natural_language("a simple task")
 
         # Assert: Verify that the fallback was used.
-        mock_fallback.assert_called_once_with("a simple task")
+        mock_fallback.assert_called_once_with("a simple task", None)
         assert result.title == "a simple task"

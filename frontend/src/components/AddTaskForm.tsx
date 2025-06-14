@@ -32,15 +32,19 @@ const AddTaskForm: React.FC<AddTaskFormProps> = ({ onSubmit, onCancel, initialDa
   const formatForInput = (dateString?: string): string => {
     if (!dateString) return '';
     try {
-      // Create a Date object. The browser automatically parses the UTC ISO string
-      // and holds the correct point in time.
-      const date = new Date(dateString);
+      // If the date string from the backend does not include timezone information
+      // (i.e., no 'Z' or +/- offset), append 'Z' to ensure it's parsed as UTC.
+      // This handles both new, timezone-aware dates and legacy data that might
+      // have been stored as naive datetimes intended to be UTC.
+      const utcDateString = /Z|[+-]\d{2}(:?\d{2})?$/.test(dateString)
+        ? dateString
+        : `${dateString}Z`;
+
+      const date = new Date(utcDateString);
       if (isNaN(date.getTime())) return '';
 
       // To display this time correctly in a `datetime-local` input, we need
       // to format it as "YYYY-MM-DDTHH:mm" IN THE USER'S LOCAL TIMEZONE.
-      // A common trick is to create a new date that is "offset" by the timezone
-      // difference, then use `toISOString()` on that new date.
       const tzOffset = date.getTimezoneOffset() * 60000; // Offset in milliseconds.
       const localDate = new Date(date.getTime() - tzOffset);
       

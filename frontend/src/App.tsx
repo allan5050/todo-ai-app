@@ -98,7 +98,15 @@ function App() {
     setIsProcessingNL(true);
     setError(null);
     try {
-      const newTask = await api.createTaskFromNaturalLanguage({ text });
+      // Get the user's timezone offset in minutes from UTC
+      // Note: getTimezoneOffset() returns positive values for timezones behind UTC
+      // and negative values for timezones ahead of UTC
+      const timezoneOffset = new Date().getTimezoneOffset();
+      
+      const newTask = await api.createTaskFromNaturalLanguage({ 
+        text, 
+        timezone: timezoneOffset 
+      });
       setTasks(prevTasks => [newTask, ...prevTasks]);
     } catch (err) {
       setError('The AI failed to understand. Please try rephrasing or add the task manually.');

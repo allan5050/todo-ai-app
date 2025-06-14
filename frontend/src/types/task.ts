@@ -65,4 +65,6 @@ export interface TaskUpdate {
 export interface NaturalLanguageRequest {
   /** The raw text input from the user to be parsed. */
   text: string;
+  /** The user's timezone offset in minutes from UTC (optional). */
+  timezone?: number;
 }
