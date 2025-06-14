@@ -1,4 +1,4 @@
-"""Task API endpoints."""
+"""API endpoints for managing tasks."""
 import logging
 from typing import List
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -12,17 +12,27 @@ from app.database import get_db
 
 logger = logging.getLogger(__name__)
 
-router = APIRouter(prefix="/tasks", tags=["tasks"])
+router = APIRouter(
+    prefix="/tasks",
+    tags=["Tasks"],
+    responses={404: {"description": "Not found"}}
+)
 
 
 def get_task_service(db: Session = Depends(get_db)) -> TaskService:
-    """Dependency to get task service."""
+    """
+    FastAPI dependency to create and provide a TaskService instance.
+    This creates a new repository and service for each request, ensuring
+    session safety in a threaded environment.
+    """
     repository = TaskRepository(db)
     return TaskService(repository)
 
 
 def get_llm_service() -> LLMService:
-    """Dependency to get LLM service."""
+    """
+    FastAPI dependency to create and provide an LLMService instance.
+    """
     return LLMService()
 
 
@@ -31,16 +41,20 @@ async def create_task(
     task: TaskCreate,
     service: TaskService = Depends(get_task_service)
 ) -> TaskResponse:
-    """Create a new task."""
+    """
+    Create a new task from structured data.
+    
+    - **task**: The task data to create.
+    """
     try:
-        logger.info(f"Creating task: {task.title}")
+        logger.info(f"Received request to create task: {task.title}")
         created_task = service.create_task(task)
         return TaskResponse.model_validate(created_task)
     except Exception as e:
-        logger.error(f"Error creating task: {str(e)}")
+        logger.error(f"Error during task creation: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to create task"
+            detail="An unexpected error occurred while creating the task."
         )
 
 
@@ -50,21 +64,26 @@ async def create_task_from_natural_language(
     task_service: TaskService = Depends(get_task_service),
     llm_service: LLMService = Depends(get_llm_service)
 ) -> TaskResponse:
-    """Create a task from natural language description."""
+    """
+    Create a new task by parsing a natural language description.
+    This endpoint uses the LLM service to interpret the text and then creates a task.
+    
+    - **request**: The natural language text to parse.
+    """
     try:
-        logger.info(f"Parsing natural language: {request.text}")
+        logger.info(f"Received request to parse natural language: '{request.text}'")
         
-        # Parse natural language to task
+        # 1. Parse the natural language input into a structured TaskCreate schema.
         task_data = llm_service.parse_natural_language(request.text)
         
-        # Create the task
+        # 2. Use the standard task creation service to save the new task.
         created_task = task_service.create_task(task_data)
         return TaskResponse.model_validate(created_task)
     except Exception as e:
-        logger.error(f"Error creating task from natural language: {str(e)}")
+        logger.error(f"Error during natural language task creation: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to parse natural language or create task"
+            detail="Failed to parse natural language or create task."
         )
 
 
@@ -74,16 +93,21 @@ async def get_tasks(
     limit: int = 100,
     service: TaskService = Depends(get_task_service)
 ) -> List[TaskResponse]:
-    """Get all tasks."""
+    """
+    Retrieve a list of all tasks with pagination.
+    
+    - **skip**: Number of tasks to skip from the start.
+    - **limit**: Maximum number of tasks to return.
+    """
     try:
-        logger.info(f"Fetching tasks (skip={skip}, limit={limit})")
+        logger.info(f"Received request to fetch tasks (skip={skip}, limit={limit})")
         tasks = service.get_tasks(skip=skip, limit=limit)
         return [TaskResponse.model_validate(task) for task in tasks]
     except Exception as e:
-        logger.error(f"Error fetching tasks: {str(e)}")
+        logger.error(f"Error fetching tasks: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to fetch tasks"
+            detail="Failed to fetch tasks."
         )
 
 
@@ -92,23 +116,27 @@ async def get_task(
     task_id: int,
     service: TaskService = Depends(get_task_service)
 ) -> TaskResponse:
-    """Get a specific task."""
+    """
+    Retrieve a single task by its ID.
+    
+    - **task_id**: The unique identifier of the task to retrieve.
+    """
     try:
-        logger.info(f"Fetching task {task_id}")
+        logger.info(f"Received request to fetch task {task_id}")
         task = service.get_task(task_id)
         if not task:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"Task with id {task_id} not found"
+                detail=f"Task with ID {task_id} not found."
             )
         return TaskResponse.model_validate(task)
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error fetching task {task_id}: {str(e)}")
+        logger.error(f"Error fetching task {task_id}: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to fetch task"
+            detail="Failed to fetch task."
         )
 
 
@@ -118,23 +146,28 @@ async def update_task(
     task_update: TaskUpdate,
     service: TaskService = Depends(get_task_service)
 ) -> TaskResponse:
-    """Update a task."""
+    """
+    Update an existing task.
+    
+    - **task_id**: The ID of the task to update.
+    - **task_update**: The fields to update in the task.
+    """
     try:
-        logger.info(f"Updating task {task_id}")
+        logger.info(f"Received request to update task {task_id}")
         updated_task = service.update_task(task_id, task_update)
         if not updated_task:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"Task with id {task_id} not found"
+                detail=f"Task with ID {task_id} not found."
             )
         return TaskResponse.model_validate(updated_task)
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error updating task {task_id}: {str(e)}")
+        logger.error(f"Error updating task {task_id}: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to update task"
+            detail="Failed to update task."
         )
 
 
@@ -143,20 +176,24 @@ async def delete_task(
     task_id: int,
     service: TaskService = Depends(get_task_service)
 ) -> None:
-    """Delete a task."""
+    """
+    Delete a task by its ID.
+    
+    - **task_id**: The ID of the task to delete.
+    """
     try:
-        logger.info(f"Deleting task {task_id}")
+        logger.info(f"Received request to delete task {task_id}")
         success = service.delete_task(task_id)
         if not success:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"Task with id {task_id} not found"
+                detail=f"Task with ID {task_id} not found."
             )
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error deleting task {task_id}: {str(e)}")
+        logger.error(f"Error deleting task {task_id}: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to delete task"
+            detail="Failed to delete task."
         )

@@ -6,7 +6,8 @@ services:
     ports:
       - "8000:8000"
     volumes:
-      - ./backend/app:/app/app
+      - ./backend/app:/app
+      - backend_data:/data
     env_file:
       - ./backend/.env
     command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
@@ -18,5 +19,10 @@ services:
     volumes:
       - ./frontend/src:/app/src
       - ./frontend/public:/app/public
+    env_file:
+      - ./frontend/.env
     depends_on:
-      - backend 
+      - backend
+
+volumes:
+  backend_data: 

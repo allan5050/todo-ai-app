@@ -1,4 +1,9 @@
-"""Main FastAPI application."""
+"""
+Main entry point for the FastAPI application.
+
+This module initializes the FastAPI application, configures middleware,
+sets up event handlers, and includes the API routers.
+"""
 import logging
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -12,9 +17,12 @@ from app.api.endpoints import health
 # Initialize FastAPI app
 app = FastAPI(
     title="Todo AI App",
-    description="A Todo/Task-List application with natural language task creation",
+    description="A Todo/Task-List application with natural language task creation powered by an LLM.",
     version="1.0.0",
-    debug=settings.debug
+    debug=settings.debug,
+    openapi_url="/api/v1/openapi.json",
+    docs_url="/docs",
+    redoc_url="/redoc"
 )
 
 # Configure CORS
@@ -29,42 +37,44 @@ app.add_middleware(
 
 @app.on_event("startup")
 async def startup_event():
-    """Initialize application on startup."""
-    logger.info("Starting Todo AI App...")
+    """
+    Application startup event handler.
+    This function is called once when the application starts.
+    It's used here to initialize the database tables.
+    """
+    logger.info("Starting up the Todo AI application...")
     try:
         init_db()
-        logger.info("Application started successfully")
+        logger.info("Application startup was successful.")
     except Exception as e:
-        logger.error(f"Failed to start application: {str(e)}")
+        logger.critical(f"Application startup failed: {e}", exc_info=True)
         raise
 
 
-@app.get("/")
+@app.get("/", tags=["Root"])
 async def root():
-    """Root endpoint."""
+    """
+    Root endpoint providing basic information about the API.
+    """
     return {
-        "message": "Todo AI App API",
-        "version": "1.0.0",
-        "docs": "/docs"
-    }
-
-
-@app.get("/health")
-async def health_check():
-    """Health check endpoint."""
-    return {
-        "status": "healthy",
-        "llm_available": bool(settings.anthropic_api_key)
+        "message": "Welcome to the Todo AI App API",
+        "version": app.version,
+        "docs_url": app.docs_url,
+        "redoc_url": app.redoc_url
     }
 
 
 @app.exception_handler(Exception)
 async def global_exception_handler(request, exc):
-    """Global exception handler."""
-    logger.error(f"Unhandled exception: {str(exc)}", exc_info=True)
+    """
+    Global exception handler to catch any unhandled exceptions.
+    This ensures that the server returns a generic 500 error response
+    instead of crashing.
+    """
+    logger.error(f"Unhandled exception during request to {request.url.path}: {exc}", exc_info=True)
     return JSONResponse(
         status_code=500,
-        content={"detail": "Internal server error"}
+        content={"detail": "An internal server error occurred."}
     )
 
 
@@ -74,4 +84,5 @@ app.include_router(health.router, prefix="/api/v1", tags=["Health"])
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    logger.info("Running application in development mode with Uvicorn.")
+    uvicorn.run("app.main:app", host="0.0.0.0", port=8000, reload=True)
