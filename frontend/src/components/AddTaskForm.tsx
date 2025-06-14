@@ -26,18 +26,26 @@ const AddTaskForm: React.FC<AddTaskFormProps> = ({ onSubmit, onCancel, initialDa
   /**
    * Formats a date string for a datetime-local input field.
    * The input requires the 'YYYY-MM-DDTHH:mm' format.
-   * @param dateString An ISO date string.
-   * @returns A formatted string compatible with datetime-local input.
+   * @param dateString An ISO date string from the backend (assumed to be UTC).
+   * @returns A formatted string compatible with datetime-local input, adjusted for the user's timezone.
    */
   const formatForInput = (dateString?: string): string => {
     if (!dateString) return '';
     try {
-      // Create a date object, ensuring it's interpreted correctly.
+      // Create a Date object. The browser automatically parses the UTC ISO string
+      // and holds the correct point in time.
       const date = new Date(dateString);
-      // Check if the date is valid.
       if (isNaN(date.getTime())) return '';
-      // Convert to a format suitable for datetime-local input.
-      return date.toISOString().slice(0, 16);
+
+      // To display this time correctly in a `datetime-local` input, we need
+      // to format it as "YYYY-MM-DDTHH:mm" IN THE USER'S LOCAL TIMEZONE.
+      // A common trick is to create a new date that is "offset" by the timezone
+      // difference, then use `toISOString()` on that new date.
+      const tzOffset = date.getTimezoneOffset() * 60000; // Offset in milliseconds.
+      const localDate = new Date(date.getTime() - tzOffset);
+      
+      // `toISOString()` on this adjusted date will produce the correct YYYY-MM-DDTHH:mm string.
+      return localDate.toISOString().slice(0, 16);
     } catch (e) {
       console.error('Error formatting date for input:', e);
       return '';
@@ -87,12 +95,17 @@ const AddTaskForm: React.FC<AddTaskFormProps> = ({ onSubmit, onCancel, initialDa
       return;
     }
 
+    // When the user submits the form, the `task.due_date` is a timezone-naive
+    // string from the <input type="datetime-local"> (e.g., "2024-06-15T19:07").
+    // We must explicitly treat this as a local time and convert it to a full
+    // UTC ISO 8601 string before sending it to the backend.
+    const dueDateUTC = task.due_date ? new Date(task.due_date).toISOString() : undefined;
+
     onSubmit({
       ...task,
       title: task.title.trim(),
       description: task.description?.trim() || undefined,
-      // Convert local datetime string back to full ISO format for the backend.
-      due_date: task.due_date ? new Date(task.due_date).toISOString() : undefined,
+      due_date: dueDateUTC,
       priority: task.priority || undefined,
     });
 

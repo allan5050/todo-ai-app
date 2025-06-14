@@ -6,7 +6,7 @@ services:
     ports:
       - "8000:8000"
     volumes:
-      - ./backend/app:/app
+      - ./backend:/app
       - backend_data:/data
     env_file:
       - ./backend/.env
@@ -24,5 +24,12 @@ services:
     depends_on:
       - backend
 
+# Decision: A named volume (`backend_data`) is used for the database.
+# Justification: This decouples the database's lifecycle from the container's.
+# More importantly, it stores the SQLite file off the host-mounted volume,
+# which is watched by the hot-reloader. This is critical for preventing
+# file-locking issues that can cause request timeouts in development.
+# Trade-off: This makes accessing the raw .db file on the host machine slightly
+# less direct, but it's a necessary trade-off for development stability.
 volumes:
   backend_data: 

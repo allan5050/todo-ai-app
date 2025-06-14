@@ -143,7 +143,13 @@ class ApiService {
 }
 
 // Export a singleton instance of the ApiService.
-// This ensures that all parts of the application use the same instance
-// and share the same configuration and interceptors.
+// Decision: A singleton instance is used for the ApiService.
+// Justification: This ensures a single, consistent point of configuration
+// (base URL, interceptors, timeouts) for all API calls throughout the application.
+// It prevents component re-renders from creating new instances and simplifies
+// mocking for tests.
+// Trade-off: In a significantly larger application that might need to connect to
+// multiple APIs with different configurations, a more flexible factory pattern
+// might be preferable. For this project's scope, the singleton is ideal.
 const apiService = new ApiService();
 export default apiService;

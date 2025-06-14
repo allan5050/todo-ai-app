@@ -35,8 +35,14 @@ const TaskList: React.FC<TaskListProps> = ({ tasks, onToggle, onDelete, onEdit }
   }
 
   // --- Task Sorting ---
-  // A new sorted array is created to avoid mutating the original props.
-  // The sorting logic enhances usability by prioritizing active tasks.
+  // Decision: Sorting is performed on the client-side on every render.
+  // Justification: For a list of this expected size, client-side sorting is
+  // instantaneous and simplifies the backend. The sorting logic (incomplete first,
+  // then newest) is an opinionated UX choice to surface relevant tasks.
+  // Trade-off: If the list of tasks were to grow into the thousands, this sorting
+  // could become a performance bottleneck. At that scale, sorting and pagination
+  // should be handled by the database on the backend, and this logic would be
+  // removed from the frontend.
   const sortedTasks = [...tasks].sort((a, b) => {
     // 1. Incomplete tasks always come before completed tasks.
     if (a.completed !== b.completed) {

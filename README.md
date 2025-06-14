@@ -131,43 +131,66 @@ make run-frontend # In terminal 2
 
 ## 🧪 Running Tests
 
-```bash
-# Run backend tests
-make test-backend
+The recommended way to run tests is within a virtual environment.
 
-# Or manually:
+### For Windows (PowerShell)
+```powershell
+# From the project root, navigate to the backend directory
 cd backend
+
+# Create and activate a virtual environment if you haven't already
+python -m venv venv
+.\\venv\\Scripts\\Activate.ps1
+
+# Install dependencies
+pip install -r requirements.txt
+
+# Run tests
 pytest -v
 ```
 
-## 🏗️ Architecture & Design Decisions
+### For macOS / Linux (Bash)
+```bash
+# From the project root, navigate to the backend directory
+cd backend
 
-### Backend Architecture
-- **Clean Architecture**: Separation of concerns with distinct layers (API, Service, Repository)
-- **Dependency Injection**: Using FastAPI's dependency system for loose coupling
-- **Environment Configuration**: All settings managed through environment variables
-- **Error Handling**: Comprehensive error handling with proper logging at each layer
-- **Type Safety**: Full type hints throughout the codebase
+# Create and activate a virtual environment if you haven't already
+python -m venv venv
+source venv/bin/activate
 
-### LLM Integration
-- **Prompt Engineering**: Structured prompts for consistent task parsing
-- **Graceful Fallback**: Rule-based parser when LLM is unavailable
-- **Error Recovery**: Automatic fallback on API failures
-- **Cost Optimization**: Using Claude Haiku model for efficiency
+# Install dependencies
+pip install -r requirements.txt
 
-### Frontend Architecture
-- **Component-Based**: Reusable React components with TypeScript
-- **Service Layer**: Centralized API communication with interceptors
-- **Type Safety**: Full TypeScript coverage with defined interfaces
-- **User Experience**: Real-time feedback and loading states
+# Run tests
+pytest -v
 
-## 🔑 Key Design Choices
+# Alternatively, you can use the Makefile shortcut from the root directory
+make test-backend
+```
 
-1. **SQLite Database**: Chosen for simplicity and portability, perfect for a demo application
-2. **No Authentication**: Simplified scope as per requirements
-3. **Fallback Parser**: Ensures the app works without API keys, demonstrating resilience
-4. **Clean Commit History**: Structured development process shown through commits
-5. **Docker Support**: Easy deployment and consistent environments
+## 🏗️ Architectural Justifications & Trade-offs
+
+This section highlights the key technical decisions made during development, the reasons behind them, and the trade-offs considered.
+
+### Backend: Clean Architecture (API → Service → Repository)
+- **Decision**: The backend is structured into three distinct layers: an API layer for handling HTTP requests, a Service layer for business logic, and a Repository layer for data access.
+- **Justification**: This separation of concerns makes the codebase highly modular, easier to test, and simpler to maintain. For example, the business logic in `TaskService` can be tested without needing a real database by simply mocking the `TaskRepository`. It also allows for a different database or ORM to be swapped in with minimal changes to the business logic.
+- **Trade-off**: For a very small, simple CRUD application, this three-layer architecture introduces more files and a little more boilerplate than a monolithic approach. However, this trade-off is well worth it for any project that is expected to grow or be maintained over time.
+
+### LLM: Primary AI Parser with Rule-Based Fallback
+- **Decision**: The core AI feature uses the Anthropic Claude API for flexible parsing but includes a complete, rule-based parser as a fallback. The system automatically switches to the fallback if the API key is missing or if the API call fails.
+- **Justification**: This dual-parser approach provides maximum resilience and a superior developer/user experience. The app is fully functional offline or without API credentials, satisfying a key project tip. The LLM provides a "wow" factor and handles complex queries, while the fallback guarantees core functionality is never broken.
+- **Trade-off**: The primary trade-off is the development overhead of building and maintaining two separate parsing logics. The rule-based parser is also inherently less flexible than the LLM and can only handle patterns it has been explicitly programmed to recognize.
+
+### Frontend: Singleton API Service
+- **Decision**: All API communication in the React application is handled through a single, instantiated `ApiService` class (a singleton pattern).
+- **Justification**: This centralizes all API logic, including base URL configuration, request/response interceptors for logging, and error handling. Any change to authentication or error reporting only needs to be made in one place. It's also trivial to mock for testing purposes.
+- **Trade-off**: In a massive application with needs for multiple, different API configurations (e.g., connecting to different domains with different headers), this pattern could be too restrictive. In such a case, a factory function that creates configured Axios instances might be more appropriate. For this project's scope, the singleton is the cleanest solution.
+
+### Database: SQLite in a Docker Named Volume
+- **Decision**: The application uses a simple SQLite database file, which is stored in a Docker named volume (`backend_data`) separate from the application's source code.
+- **Justification**: SQLite was chosen for its simplicity and zero-configuration setup, making the project easy for anyone to run. Storing it in a named volume is a critical decision for stability in a Dockerized development environment, as it prevents file-locking issues that can occur when a database file is on a host-mounted volume that is also being watched by a hot-reloader.
+- **Trade-off**: SQLite is not suitable for high-concurrency, production-scale applications. A production deployment would necessitate a switch to a more robust client-server database like PostgreSQL, but for this exercise, SQLite is the ideal choice.
 
 ## 🛡️ Error Handling & Fallbacks
 
